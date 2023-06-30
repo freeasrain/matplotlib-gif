@@ -1,0 +1,55 @@
+import numpy as np
+from matplotlib.animation import FuncAnimation
+import matplotlib.pyplot as plt
+from functools import partial
+### 绘制y=sin(2pi(x+t/t_0))*sin(2pi(t/t_0))
+def getSinx_t(t=0, t_0=120, x_count=1e5):
+    x = np.linspace(0.0, 1.0, int(x_count))
+    y = np.sin(2.0*np.pi*(x + t/t_0))*np.sin(t/t_0*2.0*np.pi)
+    return x, y
+### 初始化静态图片
+fig, ax = plt.subplots(dpi=100)
+ax.set_aspect('auto')
+ax.set_xlim((0.0, 1.0))
+ax.set_ylim((-1.0, 1.0))
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_title(r'$y=sin[2\pi(x+t/t_0)]*sin(2\pi t/t_0)$')
+### 绘制初始曲线
+x, y = getSinx_t()
+y_up = y[np.where(y>0)]
+x_up = x[np.where(y>0)]
+x_dn = x[np.where(y<0)]
+y_dn = y[np.where(y<0)]
+plot_line = ax.plot(x, y)
+plot_hline = ax.hlines(y=0.0, xmin=0.0, xmax=1.0, linestyles='dashed', colors='grey')
+fill_xy_up = ax.fill_between(x=x_up, y1=y_up, y2=0, color='red', alpha=0.3)
+fill_xy_dn = ax.fill_between(x=x_dn, y1=y_dn, y2=0, color='green', alpha=0.3)
+plot_text = ax.text(x=0.8, y=0.75, s='t=0', fontsize=16, fontfamily='cursive')
+### 定义gif动画更新函数
+def UpdateFigure(num, f_plot_line, f_fill_xy_up, f_fill_xy_dn, f_plot_text):
+    x_update, y_update = getSinx_t(t=num)
+    f_plot_line[0].set_data(x_update, y_update)
+    f_plot_text.set_text('t={}'.format(num))
+    x_up = x_update[np.where(y_update>0)]
+    y_up = y_update[np.where(y_update>0)]
+    xy_up1 = np.column_stack((x_up, y_up))
+    xy_up2 = np.column_stack((x_up[::-1], np.zeros(x_up.shape)))
+    x_dn = x_update[np.where(y_update<0)]
+    y_dn = y_update[np.where(y_update<0)]
+    xy_dn1 = np.column_stack((x_dn, y_dn))
+    xy_dn2 = np.column_stack((x_dn[::-1], np.zeros(x_dn.shape)))
+    f_fill_xy_up.set_verts([np.vstack((xy_up1, xy_up2))])
+    f_fill_xy_dn.set_verts([np.vstack((xy_dn1, xy_dn2))])
+    return [f_plot_line[0], f_fill_xy_up, f_fill_xy_dn, f_plot_text]
+### 创建FunAnimation对象
+ani = FuncAnimation(fig, partial(
+        UpdateFigure, 
+        f_plot_line=plot_line, 
+        f_fill_xy_up=fill_xy_up,
+        f_fill_xy_dn=fill_xy_dn,
+        f_plot_text=plot_text),
+    np.arange(120),
+    blit=True)
+### 保存动图
+ani.save('sinxt.gif', fps=60)  
